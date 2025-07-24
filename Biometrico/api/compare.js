@@ -2,6 +2,7 @@
 const faceapi = require('@vladmandic/face-api');
 const tf = require('@tensorflow/tfjs-node');
 const axios = require('axios');
+const sharp = require('sharp'); // <--- Importar sharp
 
 // URL donde están alojados los modelos de face-api
 const MODEL_URL = 'https://cubillosandrey.github.io/reconocimiento-models/';
@@ -22,16 +23,24 @@ async function loadModels() {
   }
 }
 
-// Función para obtener el descriptor de una imagen desde una URL
+// NUEVA VERSIÓN de la función para obtener el descriptor
 async function getDescriptorFromUrl(imageUrl) {
   try {
     // Descargar la imagen
     const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-    // Decodificarla a un tensor
-    const image = tf.node.decodeImage(Buffer.from(response.data));
+    const imageBuffer = Buffer.from(response.data);
+
+    // Redimensionar la imagen para ahorrar memoria
+    const resizedImageBuffer = await sharp(imageBuffer)
+      .resize({ width: 600 }) // Redimensiona al ancho de 600px, manteniendo la proporción
+      .toBuffer();
+
+    // Decodificar el buffer redimensionado a un tensor
+    const image = tf.node.decodeImage(resizedImageBuffer);
+
     // Detectar la cara y obtener el descriptor
     const detection = await faceapi.detectSingleFace(image).withFaceLandmarks().withFaceDescriptor();
-    tf.dispose(image); // Liberar memoria
+    tf.dispose(image); // Liberar memoria del tensor
     return detection ? detection.descriptor : null;
   } catch (error) {
     console.error(`Error procesando la imagen ${imageUrl}:`, error);
@@ -39,7 +48,8 @@ async function getDescriptorFromUrl(imageUrl) {
   }
 }
 
-// Handler principal del API
+
+// Handler principal del API (sin cambios)
 module.exports = async (req, res) => {
   try {
     // Cargar los modelos si no están cargados
