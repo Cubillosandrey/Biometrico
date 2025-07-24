@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@tensorflow/tfjs-node": "^4.11.0",
+    "@vladmandic/face-api": "^1.7.9",
+    "axios": "^1.5.0"
+  }
+}
